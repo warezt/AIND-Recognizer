@@ -1,3 +1,40 @@
+import os
+os.getcwd()
+os.chdir('C:/Users/warezt/Source/Repos/AIND-Recognizer')
+os.getcwd()
+import numpy as np
+import pandas as pd
+from asl_data import AslDb 
+asl = AslDb() # initializes the database
+
+asl.df['grnd-ry'] = asl.df['right-y'] - asl.df['nose-y']
+asl.df['grnd-rx'] = asl.df['right-x'] - asl.df['nose-x']
+asl.df['grnd-ly'] = asl.df['left-y'] - asl.df['nose-y']
+asl.df['grnd-lx'] = asl.df['left-x'] - asl.df['nose-x']
+features_ground = ['grnd-rx','grnd-ry','grnd-lx','grnd-ly']
+
+
+words_to_train = ['FISH', 'BOOK', 'VEGETABLE', 'FUTURE', 'JOHN']
+import timeit
+# TODO: Implement SelectorBIC in module my_model_selectors.py
+from my_model_selectors import SelectorBIC
+
+training = asl.build_training(features_ground)  # Experiment here with different feature sets defined in part 1
+sequences = training.get_all_sequences()
+Xlengths = training.get_all_Xlengths()
+for word in words_to_train:
+    start = timeit.default_timer()
+    model = SelectorBIC(sequences, Xlengths, word, 
+                    min_n_components=2, max_n_components=15, random_state = 14).select()
+    end = timeit.default_timer()-start
+    if model is not None:
+        print("Training complete for {} with {} states with time {} seconds".format(word, model.n_components, end))
+    else:
+        print("Training failed for {}".format(word))
+
+
+
+##SPARE SESSION
 import math
 import statistics
 import warnings
@@ -76,21 +113,14 @@ class SelectorBIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         
         # TODO implement model selection based on BIC scores
-        #Set up blank variable; BIC will be set up at inf due to its maximization to be negative
         best_score, best_model  = float("inf"), None
         for n_components in range(self.min_n_components, self.max_n_components+1):
             try:
-                # set up model varying by n_components
                 model=self.base_model(n_components)
-                # get size of row
                 number_of_sample=self.X.shape[0]
-                # get size of column
                 number_of_features=self.X.shape[1]
-                # calculate number of total free parameters
-                number_of_parameters=n_components * n_components +2*number_of_features*n_components -1
-                # BIC Formula
+                number_of_parameters=n_components *(n_components -1)+2*number_of_features*n_components 
                 bic=-2*model.score(self.X,self.lengths)+np.log(number_of_sample)*number_of_parameters
-                # Store if BIC is less than best score
                 if bic < best_score:
                     best_score, best_model = bic, model
             except Exception as e:
@@ -105,28 +135,24 @@ class SelectorDIC(ModelSelector):
     Document Analysis and Recognition, 2003. Proceedings. Seventh International Conference on. IEEE, 2003.
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.58.6208&rep=rep1&type=pdf
     DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
+    Bayesian information criteria: BIC = -2 * logL + p * logN
     '''
 
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection based on DIC scores
-        #Set up blank variable; DIC will be set up at -inf due to its maximization to be positive
-        best_score, best_model  = float("-inf"), None
-        #Create list of other words
+        best_score, best_model  = float("inf"), None
         other_words = list(self.words).remove(self.this_word)
         for n_components in range(self.min_n_components, self.max_n_components+1):
             try:
                 model=self.base_model(n_components)
                 score = model.score(self.X, self.lengths)
                 score_other_word=0
-                #Accumulate score for other words 
-                for i in other_words:
+                for i in rest_words:
                     X, lengths = self.hwords[i]
                     score_other_word = score_other_word+model.score(X, lengths)
-                #DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
                 dic=score-(score_other_word/(len(self.words)-1))
-                # Store if BIC is greather than best score
                 if dic > best_score:
                     best_score, best_model = dic, model
             except Exception as e:
@@ -142,33 +168,4 @@ class SelectorCV(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # TODO implement model selection using CV
-        #Set up blank variable; CV will be set up at -inf due to its maximization to be positive
-        best_score, best_model  = float("-inf"), None
-        for n_components in range(self.min_n_components, self.max_n_components+1):
-            try:
-                #If sequence is 2 or less, then it can't be fold
-                if (len(self.sequences)<=2):
-                    model = self.base_model(n_components)
-                    score = model.score(self.X, self.lengths)
-                else:
-                    sum_score=0
-                    parts_count=0
-                    #Split the data into parts
-                    split_method=KFold(shuffle=True,n_splits=min(len(self.sequences),3))
-                    parts=split_method.split(self.sequences)
-                    #Gather sum_score for each parts.
-                    for cv_train_idx, cv_test_idx in parts:
-                        X_train, lengths_train = asarray(combine_sequences(cv_train_idx, self.sequences))
-                        X_test, lengths_test = asarray(combine_sequences(cv_test_idx, self.sequences))
-                        #Train Model using X_train
-                        model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000,
-                                        random_state=self.random_state, verbose=False).fit(X_train, lengths_train)
-                        #Score model using x_test
-                        sum_score = sum_score+model.score(X_test,lengths_test)
-                        parts_count = parts_count+1
-                    score = sum_score / parts_count
-                if score > best_score:    
-                    best_score, best_model = bic, model
-            except Exception as e:
-                continue
-        return self.base_model(self.n_constant)
+        raise NotImplementedError
