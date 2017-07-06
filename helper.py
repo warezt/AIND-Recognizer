@@ -93,7 +93,7 @@ def train_all_words(features, model_selector):
     return model_dict
 # TODO Choose a feature set and model selector
 features = features_delta # change as needed
-model_selector = SelectorDIC # change as needed
+model_selector = SelectorBIC # change as needed
 
 # TODO Recognize the test set and display the result with the show_errors method
 models = train_all_words(features, model_selector)

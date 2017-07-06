@@ -94,9 +94,8 @@ class SelectorBIC(ModelSelector):
                 if bic < best_score:
                     best_score, best_model = bic, model
             except Exception as e:
-                continue
-        return self.base_model(self.n_constant)
-
+                return self.base_model(self.n_constant)
+        return best_model
 
 class SelectorDIC(ModelSelector):
     ''' select best model based on Discriminative Information Criterion
@@ -114,7 +113,8 @@ class SelectorDIC(ModelSelector):
         #Set up blank variable; DIC will be set up at -inf due to its maximization to be positive
         best_score, best_model  = float("-inf"), None
         #Create list of other words
-        other_words = list(self.words).remove(self.this_word)
+        other_words = list(self.words)
+        other_words.remove(self.this_word)
         for n_components in range(self.min_n_components, self.max_n_components+1):
             try:
                 model=self.base_model(n_components)
@@ -129,32 +129,29 @@ class SelectorDIC(ModelSelector):
                 # Store if BIC is greather than best score
                 if dic > best_score:
                     best_score, best_model = dic, model
+                return best_model
             except Exception as e:
-                continue
-        return self.base_model(self.n_constant)
+                return self.base_model(self.n_constant)
     
 class SelectorCV(ModelSelector):
     ''' select best model based on average log Likelihood of cross-validation folds
-
     '''
-
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-
         # TODO implement model selection using CV
         #Set up blank variable; CV will be set up at -inf due to its maximization to be positive
         best_score, best_model  = float("-inf"), None
         for n_components in range(self.min_n_components, self.max_n_components+1):
             try:
                 #If sequence is 2 or less, then it can't be fold
-                if (len(self.sequences)<=2):
+                if (len(self.lengths)<=2):
                     model = self.base_model(n_components)
                     score = model.score(self.X, self.lengths)
                 else:
                     sum_score=0
                     parts_count=0
                     #Split the data into parts
-                    split_method=KFold(shuffle=True,n_splits=min(len(self.sequences),3))
+                    split_method=KFold(shuffle=True,n_splits=min(len(self.lengths),3))
                     parts=split_method.split(self.sequences)
                     #Gather sum_score for each parts.
                     for cv_train_idx, cv_test_idx in parts:
@@ -168,7 +165,7 @@ class SelectorCV(ModelSelector):
                         parts_count = parts_count+1
                     score = sum_score / parts_count
                 if score > best_score:    
-                    best_score, best_model = bic, model
+                    best_score, best_model = score, model
+                return best_model
             except Exception as e:
-                continue
-        return self.base_model(self.n_constant)
+                return self.base_model(self.n_constant)
