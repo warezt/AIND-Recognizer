@@ -129,9 +129,9 @@ class SelectorDIC(ModelSelector):
                 # Store if BIC is greather than best score
                 if dic > best_score:
                     best_score, best_model = dic, model
-                return best_model
             except Exception as e:
                 return self.base_model(self.n_constant)
+        return best_model
     
 class SelectorCV(ModelSelector):
     ''' select best model based on average log Likelihood of cross-validation folds
@@ -151,10 +151,9 @@ class SelectorCV(ModelSelector):
                     sum_score=0
                     parts_count=0
                     #Split the data into parts
-                    split_method=KFold(shuffle=True,n_splits=min(len(self.lengths),3))
-                    parts=split_method.split(self.sequences)
+                    split_method=KFold(random_state=self.random_state,n_splits=min(len(self.lengths),3))
                     #Gather sum_score for each parts.
-                    for cv_train_idx, cv_test_idx in parts:
+                    for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
                         X_train, lengths_train = asarray(combine_sequences(cv_train_idx, self.sequences))
                         X_test, lengths_test = asarray(combine_sequences(cv_test_idx, self.sequences))
                         #Train Model using X_train
@@ -166,6 +165,6 @@ class SelectorCV(ModelSelector):
                     score = sum_score / parts_count
                 if score > best_score:    
                     best_score, best_model = score, model
-                return best_model
             except Exception as e:
                 return self.base_model(self.n_constant)
+        return best_model
