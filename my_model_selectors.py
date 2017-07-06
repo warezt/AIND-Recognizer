@@ -154,10 +154,10 @@ class SelectorCV(ModelSelector):
                     split_method=KFold(random_state=self.random_state,n_splits=min(len(self.lengths),3))
                     #Gather sum_score for each parts.
                     for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
-                        X_train, lengths_train = asarray(combine_sequences(cv_train_idx, self.sequences))
-                        X_test, lengths_test = asarray(combine_sequences(cv_test_idx, self.sequences))
+                        X_train, lengths_train = combine_sequences(cv_train_idx, self.sequences)
+                        X_test, lengths_test = combine_sequences(cv_test_idx, self.sequences)
                         #Train Model using X_train
-                        model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000,
+                        model = GaussianHMM(n_components=n_components, covariance_type="diag", n_iter=1000,
                                         random_state=self.random_state, verbose=False).fit(X_train, lengths_train)
                         #Score model using x_test
                         sum_score = sum_score+model.score(X_test,lengths_test)
